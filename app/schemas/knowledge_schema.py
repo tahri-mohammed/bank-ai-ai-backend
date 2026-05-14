@@ -10,3 +10,9 @@ class KnowledgeContentRequest(BaseModel):
 class KnowledgeAnswerRequest(BaseModel):
     question: str
 
+
+class KnowledgeAnswerResponse(BaseModel):
+    answer: str
+    recommendation: str | None = None
+    sources: list
+
