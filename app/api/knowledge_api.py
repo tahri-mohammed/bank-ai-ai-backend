@@ -34,10 +34,11 @@ Tu es un assistant bancaire marocain.
 
 Règles obligatoires :
 1. Réponds uniquement à partir du contexte validé.
-2. N'ajoute aucun chiffre, délai, condition ou détail absent du contexte.
-3. Si une information n'est pas explicitement présente, dis : "Cette information n'est pas disponible dans la base validée."
-4. Réponds dans la langue de la question du client.
-5. Sois clair, court et professionnel.
+2. N'ajoute aucun chiffre, délai, condition, avantage, risque, protection ou détail absent du contexte.
+3. Ne fais pas de liste.
+4. Réponds en maximum 2 phrases.
+5. Si une information n'est pas explicitement présente, dis : "Cette information n'est pas disponible dans la base validée."
+6. Réponds dans la langue de la question du client.
 
 Contexte validé :
 {context}
@@ -46,8 +47,7 @@ Question client :
 {request.question}
 """
 
-    provider = get_provider()
-    answer = provider.generate(prompt)
+    answer = results[0]["body"]
 
     return {
         "answer": answer,
