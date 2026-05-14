@@ -1,5 +1,8 @@
-from fastapi import APIRouter
-
+from fastapi import APIRouter, UploadFile, File
+import os
+import shutil
+from fastapi import APIRouter, UploadFile, File
+from app.services.pdf_service import extract_text_from_pdf
 from app.knowledge.knowledge_store import (
     add_content,
     search_content,
@@ -94,4 +97,25 @@ Recommandation: ...
         "answer": answer,
         "recommendation": recommendation,
         "sources": results + recommendation_sources,
+    }
+@router.post("/upload-pdf")
+def upload_pdf(file: UploadFile = File(...)):
+    os.makedirs("uploads", exist_ok=True)
+
+    file_path = f"uploads/{file.filename}"
+
+    with open(file_path, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+
+    extracted_text = extract_text_from_pdf(file_path)
+
+    content = add_content(
+        title=file.filename,
+        body=extracted_text,
+        content_type="DOCUMENT"
+    )
+
+    return {
+        "message": "PDF ingéré avec succès",
+        "content": content
     }
