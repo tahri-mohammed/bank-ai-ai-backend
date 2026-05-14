@@ -1,13 +1,17 @@
 knowledge_base = []
 
-
+from app.services.chunking_service import chunk_text
 def add_content(title: str, body: str, content_type: str):
+    chunks = chunk_text(body)
+
     item = {
         "id": len(knowledge_base) + 1,
         "title": title,
         "body": body,
-        "type": content_type
+        "type": content_type,
+        "chunks": chunks
     }
+
     knowledge_base.append(item)
     return item
 
