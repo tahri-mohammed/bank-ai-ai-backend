@@ -23,3 +23,28 @@ def search_content(query: str):
             results.append(item)
 
     return results
+
+
+def find_related_recommendations(main_results):
+    recommendations = []
+
+    main_text = " ".join(
+        [f"{item['title']} {item['body']}" for item in main_results]
+    ).lower()
+
+    for item in knowledge_base:
+        item_text = f"{item['title']} {item['body']}".lower()
+
+        if item in main_results:
+            continue
+
+        if "compte" in main_text and "carte" in item_text:
+            recommendations.append(item)
+
+        if "carte" in main_text and "application" in item_text:
+            recommendations.append(item)
+
+        if "épargne" in main_text and "compte" in item_text:
+            recommendations.append(item)
+
+    return recommendations[:1]
