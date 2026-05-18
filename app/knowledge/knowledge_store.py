@@ -1,8 +1,9 @@
 import math
-
+from app.vector.vector_store import save_chunk, search_similar_chunks
 from app.services.chunking_service import chunk_text
 from app.services.embedding_service import create_embedding
 from app.services.query_normalizer import normalize_query
+from app.vector.vector_store import save_chunk
 
 knowledge_base = []
 
@@ -24,10 +25,19 @@ def add_content(title: str, body: str, content_type: str):
     chunk_objects = []
 
     for index, chunk in enumerate(chunks):
+        embedding = create_embedding(chunk)
+
+        save_chunk(
+            document_title=title,
+            content_type=content_type,
+            chunk_text=chunk,
+            embedding=embedding,
+        )
+
         chunk_objects.append({
             "chunk_id": index + 1,
             "text": chunk,
-            "embedding": create_embedding(chunk)
+            "embedding": embedding,
         })
 
     item = {
@@ -35,7 +45,7 @@ def add_content(title: str, body: str, content_type: str):
         "title": title,
         "body": body,
         "type": content_type,
-        "chunks": chunk_objects
+        "chunks": chunk_objects,
     }
 
     knowledge_base.append(item)
@@ -45,7 +55,7 @@ def add_content(title: str, body: str, content_type: str):
         "title": item["title"],
         "body": item["body"],
         "type": item["type"],
-        "chunks_count": len(chunk_objects)
+        "chunks_count": len(chunk_objects),
     }
 
 
@@ -53,31 +63,9 @@ def search_content(query: str):
     normalized_query = normalize_query(query)
     query_embedding = create_embedding(normalized_query)
 
-    scored_results = []
+    results = search_similar_chunks(query_embedding, limit=3)
 
-    for item in knowledge_base:
-        best_score = 0
-        best_chunk = None
-
-        for chunk in item["chunks"]:
-            score = cosine_similarity(query_embedding, chunk["embedding"])
-
-            if score > best_score:
-                best_score = score
-                best_chunk = chunk["text"]
-
-        if best_score > 0.30:
-            scored_results.append({
-                "id": item["id"],
-                "title": item["title"],
-                "body": best_chunk,
-                "type": item["type"],
-                "score": round(best_score, 3)
-            })
-
-    scored_results.sort(key=lambda item: item["score"], reverse=True)
-
-    return scored_results[:3]
+    return [result for result in results if result["score"] > 0.30]
 
 
 def find_related_recommendations(main_results):
@@ -98,7 +86,7 @@ def find_related_recommendations(main_results):
                 "id": item["id"],
                 "title": item["title"],
                 "body": item["body"],
-                "type": item["type"]
+                "type": item["type"],
             })
 
     return recommendations[:1]
