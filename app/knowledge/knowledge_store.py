@@ -59,14 +59,31 @@ def add_content(title: str, body: str, content_type: str):
     }
 
 
-def search_content(query: str):
+def search_content(query: str, product_filter: str | None = None):
     normalized_query = normalize_query(query)
     query_embedding = create_embedding(normalized_query)
 
-    results = search_similar_chunks(query_embedding, limit=3)
+    results = search_similar_chunks(
+        query_embedding,
+        limit=3,
+        product_filter=product_filter,
+    )
 
-    return [result for result in results if result["score"] > 0.30]
+    clean_results = []
 
+    for result in results:
+        body_lower = result["body"].lower()
+
+        if "table des matières" in body_lower:
+            continue
+
+        if "................................................................" in result["body"]:
+            continue
+
+        if result["score"] > 0.30:
+            clean_results.append(result)
+
+    return clean_results
 
 def find_related_recommendations(main_results):
     recommendations = []

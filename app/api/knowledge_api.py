@@ -1,8 +1,9 @@
-from fastapi import APIRouter, UploadFile, File
 import os
 import shutil
+
 from fastapi import APIRouter, UploadFile, File
-from app.services.pdf_service import extract_text_from_pdf
+
+from app.graph.graph_extraction_service import extract_graph_from_text
 from app.knowledge.knowledge_store import (
     add_content,
     search_content,
@@ -13,6 +14,7 @@ from app.schemas.knowledge_schema import (
     KnowledgeContentRequest,
     KnowledgeAnswerRequest,
 )
+from app.services.pdf_service import extract_text_from_pdf
 
 router = APIRouter(prefix="/api/knowledge", tags=["Knowledge"])
 
@@ -55,7 +57,7 @@ Tu es un assistant bancaire marocain.
 
 Règles strictes :
 1. Réponds uniquement à partir du contenu validé.
-2. Si la question contient des mots darija en alphabet latin comme chno, bghit, wach, ndir, n7el, khassni, jawab obligatoirement en darija marocaine écrite en alphabet latin.
+2. Si la question contient des mots darija en alphabet latin comme chno, bghit, wach, ndir, n7el, khassni, réponds obligatoirement en darija marocaine écrite en alphabet latin.
 3. Tu ne dois ajouter aucun fait absent du contenu validé.
 4. Tu peux recommander uniquement si une source de recommandation est fournie.
 5. La recommandation doit être liée au besoin du client.
@@ -89,15 +91,17 @@ Recommandation: ...
 
         if recommendation.lower() in ["", "aucune", "none", "aucune recommandation"]:
             recommendation = None
-            
+
         if recommendation and "aucune recommandation" in recommendation.lower():
-            recommendation = None    
+            recommendation = None
 
     return {
         "answer": answer,
         "recommendation": recommendation,
         "sources": results + recommendation_sources,
     }
+
+
 @router.post("/upload-pdf")
 def upload_pdf(file: UploadFile = File(...)):
     os.makedirs("uploads", exist_ok=True)
@@ -112,10 +116,22 @@ def upload_pdf(file: UploadFile = File(...)):
     content = add_content(
         title=file.filename,
         body=extracted_text,
-        content_type="DOCUMENT"
+        content_type="DOCUMENT",
+    )
+
+    graph_result = extract_graph_from_text(
+    extracted_text,
+    document_title=file.filename,
+    content_type="DOCUMENT",
     )
 
     return {
-        "message": "PDF ingéré avec succès",
-        "content": content
-    }
+    "message": "PDF ingéré avec succès",
+    "content": {
+        "id": content["id"],
+        "title": content["title"],
+        "type": content["type"],
+        "chunks_count": content["chunks_count"],
+    },
+    "graph": graph_result,
+}
